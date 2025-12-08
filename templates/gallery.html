@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Photo Gallery</h2>
+{% if files %}
+    <div class="gallery">
+        {% for f in files %}
+            <figure class="gallery-item">
+                <img src="{{ url_for('uploaded_file', filename=f) }}" alt="{{ f }}" style="max-width:200px;">
+                <figcaption>{{ f }}</figcaption>
+            </figure>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>ala pa pic</p>
+{% endif %}
+<a class="btn" href="{{ url_for('home') }}">Back to Home</a>
+{% endblock %}

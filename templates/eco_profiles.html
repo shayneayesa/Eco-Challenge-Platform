@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>My Eco Profile</h2>
+
+<p>Username: {{ profile.username }}</p>
+<p>Points: {{ profile.points }}</p>
+
+<p>Keep collecting tree, viewing infographics, and submitting feedbacks.
+    You're not only collecting points, you are helping is improve.</p>
+
+<a class="btn" href="{{ url_for('home') }}">Back to Home</a>
+{% endblock %}

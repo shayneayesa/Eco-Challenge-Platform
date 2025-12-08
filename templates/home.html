@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Welcome to Eco Challenge</h2>
+<p>Explore infographics, enjoy the photo gallery, drop a feedback, or sign up to track your points and profile!</p>
+
+<div class="actions">
+    <a class="btn" href="{{ url_for('infographics') }}">Infographics</a>
+    <a class="btn" href="{{ url_for('gallery') }}">Photo Gallery</a>
+    <a class="btn" href="{{ url_for('feedback') }}">Feedback</a>
+    <a class="btn" href="{{ url_for('eco_profile') }}">Eco Profile (requires login)</a>
+</div>
+{% endblock %}

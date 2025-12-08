@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Eco Challenge Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1><a href="{{ url_for('home') }}">Eco Challenge</a></h1>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a> |
+            <a href="{{ url_for('infographics') }}">Infographics</a> |
+            <a href="{{ url_for('gallery') }}">Gallery</a> |
+            <a href="{{ url_for('feedback') }}">Feedback</a> |
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('eco_profile') }}">My Profile</a> |
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a> |
+                <a href="{{ url_for('signup') }}">Sign Up</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+            {% if msgs %}
+                <ul class="flashes">
+                    {% for cat, m in msgs %}
+                        <li class="{{ cat }}">{{ m }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; Eco Challenge</p>
+    </footer>
+
+
+    <script>
+
+    const TREE_CHANCE = 0.20;
+
+    document.addEventListener("DOMContentLoaded", ()=> {
+            if (Math.random() < TREE_CHANCE) {
+                spawnTree();
+            }
+    });
+
+    function spawnTree() {
+        const tree = document.createElement("div");
+        tree.textContent = "🌳";
+        tree.style.position = "fixed";
+        tree.style.fontSize = "48px";
+        tree.style.cursor = "pointer";
+        tree.style.top = (Math.random() * 70 + 10) + "%";
+        tree.style.left = (Math.random() * 70 + 10) + "%";
+
+        tree.onclick = () => {
+            fetch("/collect_tree", {method: "POST"})
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.status === "ok") {
+                        alert("You earned +1 eco point! Total: " + data.points);
+                    } else if (data.status === "guest") {
+                        let pts = parseInt(localStorage.getItem("guest_points")) || 0;
+                        pts +=1;
+                        localStorage.setItem("guest_points", pts);
+                        alert("You earned +1 eco point (guest). Total: " + pts);
+                    }
+                    tree.remove();
+                })
+                .catch(err => {
+                    let pts = parseInt(localStorage.getItem("guest_points")) || 0;
+                    pts ==1;
+                    localStorage.setItem("guest_points", pts);
+                    alert("You earned +1 eco point (guest). Total: " + pts);
+                    tree.remove();
+                });
+        };
+
+        document.body.appendChild(tree);
+    }
+    </script>
+
+    <script>
+        if (window.location.pathname === "/infographics") {
+            if (!sessionStorage.getItem("infographicsAwarded")) {
+                fetch("/collect_tree", {method:"POST"})
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.status === "guest") {
+                            let pts = parseInt(localStorage.getItem("guest_points")) || 0;
+                            pts +=2;
+                            localStorage.setItem("guest_points", pts);
+                            sessionStorage.setItem("infographicsAwarded", "1");
+                        }
+                    }) .catch(()=> {
+                        if (!sessionStorage.getItem("infographicsAwarded")) {
+                            let pts = parseInt(localStorage.getItem("guest_points", pts)) || 0;
+                            pts +=2;
+                            localStorage.setItem("guest_points", pts);
+                            sessionStorage.setItem("infographicsAwarded", "1");
+                        }
+                    });
+            }
+        }
+    </script>
+</body>
+</html>

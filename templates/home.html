@@ -8,5 +8,20 @@
     <a class="btn" href="{{ url_for('gallery') }}">Photo Gallery</a>
     <a class="btn" href="{{ url_for('feedback') }}">Feedback</a>
     <a class="btn" href="{{ url_for('eco_profile') }}">Eco Profile (requires login)</a>
+    <a class="btn" href="{{ url_for('graph') }}">Graph Data</a> 
 </div>
+
+
+{% if content %}
+    <h2>I. General Objective</h2>
+    {{ content.general_objective }}
+
+    <h2>II. Background Information</h2>
+    {{ content.background_info }}
+
+{% else %}
+
+    <p>Loading content...</p>
+
+{% endif %}
 {% endblock %}

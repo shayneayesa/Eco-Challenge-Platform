@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1>Edit Home Page Content</h1>
+<p>Update the dynamic content that appears on the Home page.</p>
+
+<form method="POST" action="{{ url_for('admin_edit_dashboard') }}">
+    {{ form.hidden_tag() }}
+
+    <label>{{ form.general_objective.label }}</label>
+    {{ form.general_objective(rows=6) }}
+
+
+    <labe>{{ form.background_info.label }}</labe>
+    {{ form.background_info(rows=6) }}
+
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}

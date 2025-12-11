@@ -1,8 +1,8 @@
 import os
-from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Admin, Feedback
-from forms import SignupForm, LoginForm, AdminSignupForm, AdminLoginForm, FeedbackForm
+from models import db, User, Admin, Feedback, HomeContent, ReforestationData, CountryMetadata
+from forms import SignupForm, LoginForm, AdminSignupForm, AdminLoginForm, FeedbackForm, HomeContentForm
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from functools import wraps
 
@@ -50,14 +50,15 @@ def admin_required(f):
     def wrapped(*args, **kwargs):
         if not session.get('admin_id'):
             flash("Admin login required.", "error")
-            return redirect(url_for('admin login'))
+            return redirect(url_for('admin_login'))
         return f(*args, *kwargs)
     return wrapped
 
 # HOMEPAGE
 @app.route('/')
 def home():
-    return render_template('home.html')
+    content = HomeContent.query.first()
+    return render_template('home.html', content=content)
 
 # INFOGRAPHICS
 @app.route('/infographics')
@@ -128,6 +129,45 @@ def collect_tree():
 def upload_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# GRAPH
+@app.route('/graph')
+def graph():
+    return render_template("graph.html")
+
+@app.route('/api/graph/<country>')
+def get_graph_data(country):
+    try:
+        data = ReforestationData.query.filter_by(country=country).order_by(ReforestationData.year).all()
+        
+        metadata = CountryMetadata.query.filter_by(country=country).first()
+        
+        if not data:
+            return jsonify({'error': 'Country not found'}), 404
+        
+        response = {
+            'country': country,
+            'years': [d.year for d in data],
+            'percentages': [d.reforestation_percentage for d in data],
+            'hectares': [d.forest_restored_hectares for d in data],
+            'metadata': {
+                'total_loss': metadata.total_forest_restored_2015_2025 if metadata else 0,
+                'avg_rate': metadata.avg_annual_reforestation_rate if metadata else 0,
+                'description': metadata.description if metadata else ''
+            }
+        }
+        
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/graph/countries')
+def get_countries():
+    try:
+        countries = db.session.query(ReforestationData.country).distinct().all()
+        return jsonify({'countries': [c[0] for c in countries]})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # SIGN-IN-OUT USERS
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -139,7 +179,7 @@ def signup():
             flash("Username already exists.", "error")
             return redirect(url_for('signup'))
         hashed = generate_password_hash(password)
-        user = User(username=username, password_hash=hashed, points=0)
+        user = User(username=username, password=hashed, points=0)
         db.session.add(user)
         db.session.commit()
 
@@ -155,7 +195,7 @@ def login():
         username = form.username.data.strip()
         password = form.password.data.strip()
         user = User.query.filter_by(username=username).first()
-        if not user or not check_password_hash(user.password_hash, password):
+        if not user or not check_password_hash(user.password, password):
             flash("Invalid username or password.", "error")
             return redirect(url_for('login'))
         login_user(UserLogin(user))
@@ -176,7 +216,7 @@ def admin_signup():
     form = AdminSignupForm()
     if form.validate_on_submit():
         username = form.username.data.strip()
-        password = form.username.data.strip()
+        password = form.password.data.strip()
         if Admin.query.filter_by(username=username).first():
             flash("Admin username already taken.", "error")
             return redirect(url_for('admin_signup'))
@@ -216,7 +256,53 @@ def admin_logout():
 def admin_dashboard():
     feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
     users = User.query.order_by(User.points.desc()).all()
-    return render_template('admin/admin_dashboard.html', feedbacks=feedbacks, users=users)
+    total_countries = db.session.query(ReforestationData.country).distinct().count()
+    total_records = ReforestationData.query.count()
+    return render_template('admin/admin_dashboard.html', feedbacks=feedbacks, users=users, reforestation_countries=total_countries, reforestation_records=total_records)
+
+
+@app.route('/admin/graph')
+def admin_graph():
+    if 'admin_id' not in session:
+        flash("Please log in to access this page.", "error")
+        return redirect(url_for('admin_login'))
+    
+    countries = db.session.query(CountryMetadata).all()
+    return render_template('admin_reforestation.html', countries=countries)
+
+@app.route('/admin/edit_dashboard', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_dashboard():
+    content = HomeContent.query.first()
+    form = HomeContentForm(obj=content)
+
+    if form.validate_on_submit():
+        if not content:
+            content=HomeContent()
+            db.session.add(content)
+
+        content.general_objective = form.general_objective.data
+        content.background_info = form.background_info.data
+        db.session.commit()
+
+        flash("Home page content updated successfully!", "success")
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/admin_edit_dashboard.html', form=form)
+
+@app.route('/test-data')
+def test_data():
+    countries = db.session.query(ReforestationData.country).distinct().all()
+    count = ReforestationData.query.count()
+    metadata_count = CountryMetadata.query.count()
+    
+    return f"""
+    <h2>Database Test</h2>
+    <p>Total reforestation records: {count}</p>
+    <p>Total country metadata: {metadata_count}</p>
+    <p>Countries: {[c[0] for c in countries]}</p>
+    """
+
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

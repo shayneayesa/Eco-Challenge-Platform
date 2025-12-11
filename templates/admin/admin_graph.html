@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Eco{% endblock %}
+{% block navigation %}
+
+<a href="{{ url_for('admin_edit_dashboard')}}">Edit Homepage</a>
+
+{% endblock %}
+
+{% block content %}
+        <h1>Planting Data Management</h1>
+        <p>View and manage global planting statistics</p>
+
+</section>
+
+    <h2>Global Planting Overview</h2>
+    
+
+            <h3>Countries Tracked</h3>
+            <p>{{ countries|length }}</p>
+            <p>Countries with tree planting data</p>
+
+
+
+            <h3>Data Coverage</h3>
+            <p>2016-2025</p>
+            <p>10 years of tracking</p>
+
+
+            <h3>Total Forest Restored</h3>
+            <p>5.9M+</p>
+            <p>Hectares used (2015-2025)</p>
+
+
+    <h2>Country Statistics</h2>
+    
+    {% if countries %}
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Total Forest Restored (ha)</th>
+                    <th>Avg Annual Rate (%)</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for country in countries %}
+                <tr>
+                    <td><strong>{{ country.country }}</strong></td>
+                    <td>{{ "{:,}".format(country.total_forest_restored_2015_2025) }}</td>
+                    <td>{{ "%.2f"|format(country.avg_annual_reforestation_rate) }}%</td>
+                    <td>{{ country.description[:80] }}{% if country.description|length > 80 %}...{% endif %}</td>
+                    <td>
+                        <a href="{{ url_for('graph') }}#{{ country.country }}" 
+                           class="btn">
+                            View Data
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No reforestation data available. Please run the seed script to populate the database.</p>
+
+        <h3>How to Add Data</h3>
+        <p>Run the following command in your terminal:</p>
+
+        <p>This will populate the database with reforestation data for 10 countries.</p>
+    </div>
+    {% endif %}
+
+        <a href="{{ url_for('graph') }}" >
+            🌲 View Public Planting Page
+        </a>
+</div>

@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
+
+
 {% block content %}
 <h2>Admin Dashboard</h2>
+
+<a href="{{ url_for('admin_edit_dashboard')}}">Edit Homepage</a>
+
+<h3>Tree Planting Data</h3>
+<p>Manage global Tree Planting statistics and country data.</p>
+<p><strong>{{ graph_countries }}</strong> countries tracked</p>
+<a href="{{ url_for('admin_graph') }}" class="btn">Manage Data</a>
 
 <h3>Users (top points)</h3>
 <table border="1" cellpadding="6">
@@ -17,5 +26,7 @@
     {% endfor %}
 </ul>
 
+
 <a class="btn" href="{{ url_for('home')}}">Back to Site</a>
+
 {% endblock %}

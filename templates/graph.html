@@ -1,0 +1,381 @@
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+    .reforestation-header {
+        background: linear-gradient(135deg, #2d5016 0%, #3a6b1f 100%);
+        padding: 40px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .reforestation-header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        color: #dff8df;
+    }
+
+    .reforestation-header p {
+        font-size: 1.2em;
+        color: rgba(255,255,255,0.9);
+    }
+
+    .country-selector {
+        margin-bottom: 30px;
+        text-align: center;
+        padding: 20px;
+        background: rgba(20, 60, 20, 0.25);
+        border-radius: 12px;
+    }
+
+    .country-selector label {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #4caf50;
+        margin-right: 15px;
+    }
+
+    .country-selector select {
+        padding: 12px 20px;
+        font-size: 1em;
+        border: 2px solid #3a6b1f;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.9);
+        cursor: pointer;
+        min-width: 200px;
+        transition: all 0.3s;
+        color: #2d5016;
+        font-weight: bold;
+    }
+
+    .country-selector select:hover {
+        border-color: #4caf50;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 500px;
+        margin-bottom: 40px;
+        background: rgba(255,255,255,0.95);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 40px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(60, 125, 60, 0.3) 100%);
+        backdrop-filter: blur(6px);
+        padding: 25px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card h3 {
+        color: #4caf50;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card .value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #c0392b;
+        margin-bottom: 5px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .stat-card .label {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.9);
+    }
+
+    .country-info {
+        background: rgba(255, 249, 230, 0.15);
+        border-left: 5px solid #f39c12;
+        padding: 20px;
+        margin-top: 30px;
+        border-radius: 8px;
+        backdrop-filter: blur(6px);
+    }
+
+    .country-info h3 {
+        color: #f39c12;
+        margin-bottom: 10px;
+    }
+
+    .country-info p {
+        color: rgba(255,255,255,0.95);
+        line-height: 1.6;
+        font-size: 1.05em;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        font-size: 1.2em;
+        color: #4caf50;
+    }
+
+    @media (max-width: 768px) {
+        .deforestation-header h1 {
+            font-size: 1.8em;
+        }
+        
+        .chart-container {
+            height: 350px;
+        }
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+    <div class="reforestation-header">
+        <h1> Eco </h1>
+        <p>Global Forest Restore Analysis (2016-2025)</p>
+    </div>
+
+    <div class="country-selector">
+        <label for="countrySelect">Select Country:</label>
+        <select id="countrySelect" onchange="loadCountryData()">
+            <option value="">Loading countries...</option>
+        </select>
+    </div>
+
+    <div id="loadingMessage" class="loading">Loading data...</div>
+
+    <div id="chartSection" style="display: none;">
+        <div class="chart-container">
+            <canvas id="graphChart"></canvas>
+        </div>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="country-info" id="countryInfo"></div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script>
+let chart = null;
+const colors = {
+    'Philippines': 'rgba(231, 76, 60, 0.8)',
+    'Brazil': 'rgba(231, 76, 60, 0.8)',
+    'Angola': 'rgba(230, 126, 34, 0.8)',
+    'Tanzania': 'rgba(241, 196, 15, 0.8)',
+    'Myanmar': 'rgba(46, 204, 113, 0.8)',
+    'DR Congo': 'rgba(52, 152, 219, 0.8)',
+    'Mozambique': 'rgba(155, 89, 182, 0.8)',
+    'Cambodia': 'rgba(231, 76, 60, 0.8)',
+    'Peru': 'rgba(26, 188, 156, 0.8)',
+    'Bolivia': 'rgba(243, 156, 18, 0.8)',
+    'Paraguay': 'rgba(192, 57, 43, 0.8)'
+};
+
+// Load countries on page load
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/graph/countries')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('countrySelect');
+            select.innerHTML = '';
+            
+            data.countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                select.appendChild(option);
+            });
+            
+            // Load first country by default
+            if (data.countries.length > 0) {
+                loadCountryData();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading countries:', error);
+            document.getElementById('loadingMessage').textContent = 'Error loading countries. Please refresh the page.';
+        });
+});
+
+function loadCountryData() {
+    const country = document.getElementById('countrySelect').value;
+    if (!country) return;
+    
+    document.getElementById('loadingMessage').style.display = 'block';
+    document.getElementById('chartSection').style.display = 'none';
+    
+    fetch(`/api/graph/${country}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('chartSection').style.display = 'block';
+            
+            updateChart(data);
+            updateStatistics(data);
+            updateCountryInfo(data);
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            document.getElementById('loadingMessage').textContent = 'Error loading data. Please try again.';
+        });
+}
+
+function updateChart(data) {
+    if (chart) {
+        chart.destroy();
+    }
+    
+    const ctx = document.getElementById('graphChart').getContext('2d');
+    const color = colors[data.country] || 'rgba(76, 175, 80, 0.8)';
+    
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.years,
+            datasets: [{
+                label: 'Annual Reforestation Rate (%)',
+                data: data.percentages,
+                backgroundColor: color,
+                borderColor: color.replace('0.8', '1'),
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: color.replace('0.8', '1')
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        color: '#2d5016'
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `${data.country} - Yearly Reforestation Rate (2016-2025)`,
+                    font: {
+                        size: 20,
+                        weight: 'bold'
+                    },
+                    color: '#2d5016'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Reforestation: ${context.parsed.y}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Percentage (%)',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        color: '#2d5016'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#2d5016'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        color: '#2d5016'
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#2d5016'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateStatistics(data) {
+    const percentages = data.percentages;
+    const avgPercentage = (percentages.reduce((a, b) => a + b, 0) / percentages.length).toFixed(2);
+    const maxPercentage = Math.max(...percentages).toFixed(2);
+    const minPercentage = Math.min(...percentages).toFixed(2);
+    const trend = percentages[percentages.length - 1] < percentages[0] ? 'Decreasing' : 'Increasing';
+    const trendColor = trend === 'Decreasing' ? '#27ae60' : '#c0392b';
+    
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+            <h3>Total Forest Restored</h3>
+            <div class="value">${(data.metadata.total_restored / 1000).toFixed(0)}K</div>
+            <div class="label">Hectares (2015-2025)</div>
+        </div>
+        <div class="stat-card">
+            <h3>Average Annual Rate</h3>
+            <div class="value">${avgPercentage}%</div>
+            <div class="label">Yearly Average</div>
+        </div>
+        <div class="stat-card">
+            <h3>Peak Year Rate</h3>
+            <div class="value">${maxPercentage}%</div>
+            <div class="label">Highest Recorded</div>
+        </div>
+        <div class="stat-card">
+            <h3>Current Trend</h3>
+            <div class="value" style="color: ${trendColor}">${trend}</div>
+            <div class="label">2025 vs 2016</div>
+        </div>
+    `;
+}
+
+function updateCountryInfo(data) {
+    document.getElementById('countryInfo').innerHTML = `
+        <h3>About ${data.country}'s Reforestation</h3>
+        <p>${data.metadata.description}</p>
+    `;
+}
+</script>
+{% endblock %}
